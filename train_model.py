@@ -5,12 +5,12 @@ import torch.optim as optim  # type: ignore
 import torchvision.transforms as transforms  # type: ignore
 from torchvision.datasets import CIFAR10  # type: ignore
 from torch.utils.data import DataLoader  # type: ignore
-from models.resnet import ResNet18_Slim, ResNet18_Test, ResNet18
+from models.resnet import ResNet18_Slim
 import binaryconnect
 import wandb # type: ignore
 from thop import profile # type: ignore
 
-# Arguments argparse + arguments fixes
+# Argparse arguments + fixed arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("--lr", type=float, default=0.01, help="Learning Rate")
 parser.add_argument("--name", type=str, default="resnet18", help="Model Name")
@@ -49,7 +49,7 @@ trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
 testloader = DataLoader(testset, batch_size=batch_size)
 
 # Model setup
-model = ResNet18_Slim().to(device)
+model = ResNet18_Slim(use_maxpool=True, use_1x1_conv=False).to(device)
 model.eval()
 
 # Optimizer + Criterion + Scheduler
@@ -76,7 +76,7 @@ for epoch in range(train_epochs):
 
     scheduler.step()
 
-    # Evaluation on test set
+    # Evaluation
     correct = 0
     total = 0
     model.eval()
@@ -92,7 +92,7 @@ for epoch in range(train_epochs):
     print(f"Loss: {running_loss / len(trainloader):.4f}, Test Accuracy: {accuracy:.2f}%")
     wandb.log({"epoch": epoch+1, "accuracy": accuracy, "loss": running_loss})
 
-# Final evaluation after training
+# Final evaluation 
 correct = 0
 total = 0
 model.eval()
@@ -104,10 +104,10 @@ with torch.no_grad():
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 accuracy = 100 * correct / total
-print(f"Final accuracy after training: {accuracy}%")
+print(f"Final accuracy: {accuracy}%")
 wandb.log({"final_accuracy": accuracy})
 
-# Profiling
+# Thop profile
 for data in trainloader:
     inputs, labels = data[0].to(device), data[1].to(device)
     single_input = inputs[0].unsqueeze(0)

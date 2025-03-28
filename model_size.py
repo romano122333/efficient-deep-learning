@@ -13,6 +13,7 @@ from thop import profile # type: ignore
 parser = argparse.ArgumentParser()
 parser.add_argument("--name", type=str, default="run", help="Model Name")
 args = parser.parse_args()
+name = args.name
 
 # Device setup
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -24,20 +25,18 @@ trainset = CIFAR10(root='./data', train=True, download=True, transform=transform
 trainloader = DataLoader(trainset, batch_size=64, shuffle=True)
 
 # Model setup
-# model = SqueezeNet(10).to(device)
-
-model = torch.hub.load('pytorch/vision:v0.10.0', 'squeezenet1_0', pretrained=False).to(device)
-model.load_state_dict(torch.load(f"{args.name}.pth", map_location=device))
+model = ResNet18_Slim().to(device)
+model.load_state_dict(torch.load(f"{name}.pth", map_location=device))
 model.eval()
 
+# Profiling
 for data in trainloader:
     inputs, labels = data[0].to(device), data[1].to(device)
     
-    # Utiliser une seule image plutôt qu'un batch complet
     single_input = inputs[0].unsqueeze(0)
     
     macs, params = profile(model, inputs=(single_input,))
-    break  # On arrête après une seule itération, inutile de parcourir tout le dataset
+    break
 
 print(f"Nombre de MACs : {macs:,}")
 print(f"Nombre de paramètres : {params:,}")

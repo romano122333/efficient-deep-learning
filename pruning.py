@@ -7,9 +7,8 @@ import torchvision.transforms as transforms # type: ignore
 from torchvision.datasets import CIFAR10 # type: ignore
 from torch.utils.data import DataLoader # type: ignore
 from models.resnet import ResNet18_Slim, ResNet18
-import binaryconnect # type: ignore
+import binaryconnect
 import wandb # type: ignore
-from thop import profile # type: ignore
 
 # Argument parsing
 parser = argparse.ArgumentParser()
@@ -33,15 +32,14 @@ trainloader = DataLoader(trainset, batch_size=64, shuffle=True)
 testloader = DataLoader(testset, batch_size=64)
 
 # Model setup
-model = ResNet18().to(device)
-# model.load_state_dict(torch.load(f"saved_models/run1-resnet18.pth", map_location=device)) # type: ignore
-model.load_state_dict(torch.load(f"saved_models/run1-resnet18.pth", map_location=device), strict=False)
+model = ResNet18_Slim().to(device)
+model.load_state_dict(torch.load(f"model.pth", map_location=device), strict=False)
 model.eval()
 
 # Pruning setup
 if args.global_pruning == "True":
     if args.p_s > 0:
-        raise ValueError("Structured pruning cannot be global_pruning.")
+        raise ValueError("Error")
     prune.global_unstructured([(model.conv1, "weight")], pruning_method=prune.L1Unstructured, amount=args.p_u / 100)
 else:
     if args.p_u > 0:
@@ -91,7 +89,3 @@ for epoch in range(args.e):
     print(f"Epoch : {epoch + 1}")
     print(f"Accuracy : {accuracy}")
     wandb.log({"epoch": epoch + 1, "train_loss": running_loss, "accuracy": accuracy})
-
-# file_name = args.name + ".pth"
-# torch.save(model.state_dict(), file_name)
-print("Pruning complete.")
